@@ -3,9 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="description" content="My Stock Trading Journal">
+    <title>Stock Trading Journal</title>
+    <style>
+        /* ... same CSS as before ... */
+    </style>
 </head>
 <body>
-    <h1>hello world</h1>
+
+    <header>
+        <h1>My Stock Trading Journal</h1>
+        <p>Tracking my journey in the stock market</p>
+    </header>
+
+    <main>
+        <section id="journal-filters">
+            <h2>View Trades</h2>
+            <label for="yearSelect">Select Year:</label>
+            <select id="yearSelect" onchange="showMonths()">
+                <option value="">--Select Year--</option>
+                <!-- Years will be dynamically populated -->
+            </select>
+
+            <div id="monthSelectContainer" class="hidden">
+                <label for="monthSelect">Select Month:</label>
+                <select id="monthSelect" onchange="showDays()">
+                    <option value="">--Select Month--</option>
+                </select>
+            </div>
+
+            <div id="daySelectContainer" class="hidden">
+                <label for="daySelect">Select Day:</label>
+                <select id="daySelect" onchange="showEntry()">
+                    <option value="">--Select Day--</option>
+                </select>
+            </div>
+        </section>
+
+        <section id="journal-entries">
+            <h2>Journal Entries</h2>
+            <div id="entries-container"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 My Stock Trading Journal. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const entriesContainer = document.getElementById('entries-container');
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+        const daySelect = document.getElementById('daySelect');
+
+        // Fetch data from Google Sheets Web App
+        fetch('YOUR_GOOGLE_SHEETS_WEB_APP_URL')
+            .then(response => response.json())
+            .then(data => {
+                // Organize data by year, month, day
+                const entriesByDate = {};
+
+                data.forEach(entry => {
+                    const [year, month, day] = entry.date.split('-');
+                    if (!entriesByDate[year]) entriesByDate[year] = {};
+                    if (!entriesByDate[year][month]) entriesByDate[year][month] = [];
+                    entriesByDate[year][month].push({ day, ...entry });
+                });
+
+                // Populate the year dropdown
+                Object.keys(entriesByDate).forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
+
+                // Add event listeners to handle dropdown changes
+                yearSelect.addEventListener('change', function() {
+                    const selectedYear = yearSelect.value;
+                    monthSelect.innerHTML = '<option value="">--Select Month--</option>';
+
+                    if (selectedYear) {
+                        Object.keys(entriesByDate[selectedYear]).forEach(month => {
+                            const option = document.createElement('option');
+                            option.value = month;
+                            option.textContent = month;
+                            monthSelect.appendChild(option);
+                        });
+                        document.getElementById('monthSelectContainer').classList.remove('hidden');
+                    } else {
+                        document.getElementById('monthSelectContainer').classList.add('hidden');
+                    }
+                });
+
+                monthSelect.addEventListener('change', function() {
+                    const selectedYear = yearSelect.value;
+                    const selectedMonth = monthSelect.value;
+                    daySelect.innerHTML = '<option value="">--Select Day--</option>';
+
+                    if (selectedMonth) {
+                        entriesByDate[selectedYear][selectedMonth].forEach(entry => {
+                            const option = document.createElement('option');
+                            option.value = entry.day;
+                            option.textContent = entry.day;
+                            daySelect.appendChild(option);
+                        });
+                        document.getElementById('daySelectContainer').classList.remove('hidden');
+                    } else {
+                        document.getElementById('daySelectContainer').classList.add('hidden');
+                    }
+                });
+
+                daySelect.addEventListener('change', function() {
+                    const selectedYear = yearSelect.value;
+                    const selectedMonth = monthSelect.value;
+                    const selectedDay = daySelect.value;
+                    const selectedEntry = entriesByDate[selectedYear][selectedMonth].find(entry => entry.day === selectedDay);
+
+                    if (selectedEntry) {
+                        entriesContainer.innerHTML = `
+                            <div class="trade-entry">
+                                <span class="trade-date">${selectedEntry.date}</span>
+                                <div class="trade-details">
+                                    <p><strong>Stock:</strong> ${selectedEntry.stock}</p>
+                                    <p><strong>Action:</strong> ${selectedEntry.action}</p>
+                                    <p><strong>Reason:</strong> ${selectedEntry.reason}</p>
+                                    <img src="${selectedEntry.imageUrl}" alt="${selectedEntry.stock} trade screenshot" class="trade-image">
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            });
+    </script>
+
 </body>
 </html>
